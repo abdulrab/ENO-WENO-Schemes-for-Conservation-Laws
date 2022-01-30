@@ -1,0 +1,69 @@
+\documentclass{beamer}
+\usepackage[siunitx,europeanresistors,americaninductors]{circuitikz}% elektriskās shēmas
+\usepackage{tikz}% priekš elektriskajām shēmām kaut kas
+\usepackage{amsmath}% var izmantot math mode
+\usepackage{color}% var mainīt krāsu teksta paragrāfa vidū
+\usepackage{wrapfig}% attelam apkart iet teksts
+\usepackage{blindtext}% labākais veids kā saprast erorrus
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx} % var ielikt bildes
+\usepackage{tabularx} % tabulas
+\usepackage{multicol} % vairākas kolonas var izmantot
+\usetheme{Goettingen} % Uzliek labjā malā nosaukumu un autoru
+% \usetheme{default} % Uzliek labjā malā nosaukumu un autoru
+
+\title{High Order Essentially Non-Oscillatory Schemes and Weighted Essentially Non-Oscillatory Schemes for Selected Riemann Problems}
+% \author{Abdul Rab}
+\author[Abdul Rab]{Abdul Rab\\[10mm]}
+\institute{Sukkur IBA University}
+\date{07 February 2022}
+ 
+\begin{document} 
+\frame{\titlepage} 
+
+\section{Introduction}
+
+\begin{frame}{Definitions}
+    \begin{enumerate}
+        \item Hyperbolic PDEs
+        \item Conservation Laws
+        \item Consistency
+        \item Stability
+        \item Convergence
+        \item Riemann Problem
+        \item Scheme
+    \end{enumerate}
+\end{frame}
+
+
+\section{ENO Scheme for Conservation laws}
+\begin{frame}{ENO Schemes}
+\begin{enumerate}
+    \item Finite Volume Method
+    \item ENO Scheme
+    \item Numerical Fluxes
+\end{enumerate}
+\end{frame}
+
+\section{Mathematical Model}
+\begin{frame}{Mathematical Model}
+    Applying the ENO weno Schemes on the Proposed model in the article
+    Show the Model with system of equations
+\end{frame}
+
+
+\section{Future Work}
+\begin{frame}{Extension}
+    Higher Order Multidimensional ENO/Weno scheme for proposed model
+    Implementing Algorithm for proposed Mathematical Model.
+\end{frame}
+
+
+%% References
+\begin{frame}[allowframebreaks]
+        \frametitle{References}
+        \bibliographystyle{amsalpha}
+        \bibliography{references.bib}
+\end{frame}
+
+\end{document}
