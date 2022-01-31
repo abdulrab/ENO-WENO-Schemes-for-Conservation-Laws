@@ -9,14 +9,14 @@
 \usepackage{graphicx} % var ielikt bildes
 \usepackage{tabularx} % tabulas
 \usepackage{multicol} % vairākas kolonas var izmantot
-\usetheme{Goettingen} % Uzliek labjā malā nosaukumu un autoru
-% \usetheme{default} % Uzliek labjā malā nosaukumu un autoru
+% \usetheme{Goettingen} % Uzliek labjā malā nosaukumu un autoru
+\usetheme{default} % Uzliek labjā malā nosaukumu un autoru
 
 \title{High Order Essentially Non-Oscillatory Schemes and Weighted Essentially Non-Oscillatory Schemes for Selected Riemann Problems}
 % \author{Abdul Rab}
 \author[Abdul Rab]{Abdul Rab\\[10mm]}
 \institute{Sukkur IBA University}
-\date{07 February 2022}
+\date{\today}
  
 \begin{document} 
 \frame{\titlepage} 
@@ -26,23 +26,99 @@
 \begin{frame}{Definitions}
     \begin{enumerate}
         \item Hyperbolic PDEs
-        \item Conservation Laws
-        \item Consistency
-        \item Stability
-        \item Convergence
+        
         \item Riemann Problem
         \item Scheme
     \end{enumerate}
 \end{frame}
+\begin{frame}{Hyperbolic conservation law}
+A conservation law states that a particular measurable property of an isolated physical system does not change as the system evolves over time. Hyperbolic PDEs of the following form happens to be the conservation law.
+\begin{equation}
+    \frac{\partial }{\partial t}u(x,t) + \frac{\partial }{\partial x}f(u(x,t)) = 0
+\end{equation}
+Here $u(x,t)$ represents the quantity that moves according to the given flux function $f(u(x,t))$.\\
+
+\end{frame}
+
+\section{ENO Scheme}
+\begin{frame}{ENO Reconstruction}
+The finite volume scheme 
+
+\begin{equation}
+    \frac{d}{dt} \bar{u_i} + \frac{1}{\Delta x_i} \left[ \hat{f}(u^{-}_{i+\frac{1}{2}},u^{+}_{{i+\frac{1}{2}}}) - \hat{f}(u^-_{i-\frac{1}{2}} , u^+_{i-\frac{1}{2}} ) \right] = 0
+\end{equation}
+
+Consider three three-point stencils
+\begin{align}
+    \{ I_{j-2},I_{j-1},I_{j} \}, \; \; \{ I_{j-2},I_{j-1},I_{j} \} \; \;  \{ I_{j-2},I_{j-1},I_{j} \}
+\end{align}
+
+Stencils with smallest variation (measured by divided difference) is chosen to reconstruction $u^-_{j+\frac{1}{2}}$.
 
 
-\section{ENO Scheme for Conservation laws}
-\begin{frame}{ENO Schemes}
 \begin{enumerate}
     \item Finite Volume Method
     \item ENO Scheme
     \item Numerical Fluxes
 \end{enumerate}
+\end{frame}
+
+
+\begin{frame}{ENO stencil selection}
+    \begin{itemize}
+        \item Solution cell averages:
+        \begin{equation}
+            u[x_j] = \bar{u_j}, \; \; \; \forall j
+        \end{equation}
+        
+        \item First order divided difference:
+        \begin{equation}
+            u[x_j,x_{j+1}] = \frac{u[x_{j+1}] - u[x_j] }{x_{j+1} - x_j}, \; \; \forall j
+        \end{equation}
+        \item kth order divided difference:
+        \begin{equation}
+            u[x_j,x_{j+1},\cdots,x_{j+k}] = 
+        \end{equation}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{ENO Stencil}
+    Figure here
+\end{frame}
+
+\begin{frame}{ENO Reconstruction of $u^-_{j+\frac{1}{2}}$}
+\begin{enumerate}
+    \item Choose ENO stencil containing 3 cells
+    \begin{enumerate}
+        \item starting with $\bar{u}_j$
+        \item choose 3 cells in the ENO stencil, in an adaptive manner guided by divided differences.
+    \end{enumerate}
+    
+    \item Contruct polynomials of degree 2, whose cell averages agree with the given cell averages.
+    \begin{equation}
+        \int P_2(x)dx = \bar{u_j} \; \; I \in \text{ ENO stencil.}
+    \end{equation}
+    
+    \item Evaluate $P_2(x)$ at $x_{j+\frac{1}{2}}$ approximating $u^-_{j+\frac{1}{2}}$.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{ENO Scheme}
+    Given $\bar{u_j} \forall j$ 
+    \begin{enumerate}
+        \item ENO reconstruction $u^{\pm}_{j+\frac{1}{2}},\;\; \forall j$.
+        
+        \item Evaluate numerical fluxes
+        \begin{equation}
+            \hat{f}_{j+\frac{1}{2}} = \bar{f}(u^-_{j+\frac{1}{2}}, u^+_{j+\frac{1}{2}}), \;\;\; \forall j.
+        \end{equation}
+        
+        \item Evolve the ODE system by method of lines
+        \begin{equation}
+            \frac{d}{dt} \bar{u_j} + \frac{1}{\Delta x} \left( \bar{f}_{j+\frac{1}{2}} - \hat{f}_{j+\frac{1}{2}}  \right) = 0,
+        \end{equation}
+        to update $\bar{u}$ for each RungeKutta stage, and finally $u^{n+1}_j$.
+    \end{enumerate}
 \end{frame}
 
 \section{Mathematical Model}
@@ -53,7 +129,7 @@
 
 
 \section{Future Work}
-\begin{frame}{Extension}
+\begin{frame}{Future Work}
     Higher Order Multidimensional ENO/Weno scheme for proposed model
     Implementing Algorithm for proposed Mathematical Model.
 \end{frame}
