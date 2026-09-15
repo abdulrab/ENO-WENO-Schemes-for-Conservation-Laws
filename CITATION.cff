@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this educational WENO implementation, please cite this repository."
+title: "ENO/WENO Schemes for Conservation Laws"
+type: software
+authors:
+  - family-names: Chachar
+    given-names: Abdul Rab
+repository-code: "https://github.com/abdulrab/ENO-WENO-Schemes-for-Conservation-Laws"
+url: "https://github.com/abdulrab/ENO-WENO-Schemes-for-Conservation-Laws"
+version: 0.1.0
+date-released: 2026-09-15
