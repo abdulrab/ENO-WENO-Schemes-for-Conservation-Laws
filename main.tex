@@ -1,145 +1,359 @@
-\documentclass{beamer}
-\usepackage[siunitx,europeanresistors,americaninductors]{circuitikz}% elektriskās shēmas
-\usepackage{tikz}% priekš elektriskajām shēmām kaut kas
-\usepackage{amsmath}% var izmantot math mode
-\usepackage{color}% var mainīt krāsu teksta paragrāfa vidū
-\usepackage{wrapfig}% attelam apkart iet teksts
-\usepackage{blindtext}% labākais veids kā saprast erorrus
+\documentclass[aspectratio=169]{beamer}
+
 \usepackage[utf8]{inputenc}
-\usepackage{graphicx} % var ielikt bildes
-\usepackage{tabularx} % tabulas
-\usepackage{multicol} % vairākas kolonas var izmantot
-% \usetheme{Goettingen} % Uzliek labjā malā nosaukumu un autoru
-\usetheme{default} % Uzliek labjā malā nosaukumu un autoru
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{bm}
 
-\title{High Order Essentially Non-Oscillatory Schemes and Weighted Essentially Non-Oscillatory Schemes for Selected Riemann Problems}
-% \author{Abdul Rab}
-\author[Abdul Rab]{Abdul Rab\\[10mm]}
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}
+
+\title{High-Order ENO and WENO Schemes for Conservation Laws}
+\subtitle{Reconstruction ideas for selected Riemann problems}
+\author{Abdul Rab}
 \institute{Sukkur IBA University}
-\date{\today}
- 
-\begin{document} 
-\frame{\titlepage} 
+\date{}
 
-\section{Introduction}
+\newcommand{\uh}{\bar{u}}
+\newcommand{\dx}{\Delta x}
+\newcommand{\dt}{\Delta t}
 
-\begin{frame}{Definitions}
-    \begin{enumerate}
-        \item Hyperbolic PDEs
-        
-        \item Riemann Problem
-        \item Scheme
-    \end{enumerate}
-\end{frame}
-\begin{frame}{Hyperbolic conservation law}
-A conservation law states that a particular measurable property of an isolated physical system does not change as the system evolves over time. Hyperbolic PDEs of the following form happens to be the conservation law.
-\begin{equation}
-    \frac{\partial }{\partial t}u(x,t) + \frac{\partial }{\partial x}f(u(x,t)) = 0
-\end{equation}
-Here $u(x,t)$ represents the quantity that moves according to the given flux function $f(u(x,t))$.\\
+\begin{document}
 
+\begin{frame}
+    \titlepage
 \end{frame}
 
-\section{ENO Scheme}
-\begin{frame}{ENO Reconstruction}
-The finite volume scheme 
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
 
+\section{Conservation Laws and Riemann Problems}
+
+\begin{frame}{Hyperbolic conservation laws}
+A one-dimensional scalar conservation law has the form
 \begin{equation}
-    \frac{d}{dt} \bar{u_i} + \frac{1}{\Delta x_i} \left[ \hat{f}(u^{-}_{i+\frac{1}{2}},u^{+}_{{i+\frac{1}{2}}}) - \hat{f}(u^-_{i-\frac{1}{2}} , u^+_{i-\frac{1}{2}} ) \right] = 0
+    u_t + f(u)_x = 0,
+\end{equation}
+where $u(x,t)$ is the conserved quantity and $f(u)$ is the physical flux.
+
+\medskip
+Important features include
+\begin{itemize}
+    \item propagation with finite wave speeds,
+    \item formation of discontinuities even from smooth initial data,
+    \item shocks and rarefaction waves,
+    \item the need for conservative numerical discretizations.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{The Riemann problem}
+A Riemann problem is an initial-value problem with piecewise constant data
+\begin{equation}
+    u(x,0)=
+    \begin{cases}
+        u_L, & x<0,\\
+        u_R, & x>0.
+    \end{cases}
 \end{equation}
 
-Consider three three-point stencils
-\begin{align}
-    \{ I_{j-2},I_{j-1},I_{j} \}, \; \; \{ I_{j-2},I_{j-1},I_{j} \} \; \;  \{ I_{j-2},I_{j-1},I_{j} \}
-\end{align}
+For nonlinear conservation laws, the solution may contain shocks, rarefactions, or combinations of waves.
 
-Stencils with smallest variation (measured by divided difference) is chosen to reconstruction $u^-_{j+\frac{1}{2}}$.
+\medskip
+Riemann problems are fundamental test cases for high-resolution finite-volume methods.
+\end{frame}
 
+\section{Finite-Volume Framework}
 
+\begin{frame}{Cell averages}
+Partition the spatial domain into cells
+\[
+I_j=[x_{j-1/2},x_{j+1/2}], \qquad \dx=x_{j+1/2}-x_{j-1/2}.
+\]
+The cell average is
+\begin{equation}
+    \uh_j(t)=\frac{1}{\dx}\int_{I_j}u(x,t)\,dx.
+\end{equation}
+Integrating the conservation law over $I_j$ gives
+\begin{equation}
+    \frac{d\uh_j}{dt}
+    +\frac{1}{\dx}
+    \left(
+    \hat f_{j+1/2}-\hat f_{j-1/2}
+    \right)=0.
+\end{equation}
+The interface fluxes $\hat f_{j\pm1/2}$ determine how information moves between neighboring cells.
+\end{frame}
+
+\begin{frame}{Why reconstruction is needed}
+Using only piecewise-constant cell averages produces a first-order method.
+
+\medskip
+To obtain higher-order accuracy, reconstruct left and right interface values
+\[
+    u^-_{j+1/2}, \qquad u^+_{j+1/2}
+\]
+from nearby cell information and evaluate a consistent numerical flux
+\begin{equation}
+    \hat f_{j+1/2}=\mathcal{F}
+    \left(u^-_{j+1/2},u^+_{j+1/2}\right).
+\end{equation}
+
+The difficulty is to remain high-order accurate in smooth regions without generating Gibbs-type oscillations near shocks.
+\end{frame}
+
+\section{ENO Reconstruction}
+
+\begin{frame}{Essentially Non-Oscillatory idea}
+ENO methods choose one stencil adaptively from several candidates.
+
+\medskip
+For a third-order reconstruction around cell $I_j$, candidate three-cell stencils are
+\begin{align*}
+S_0 &= \{I_{j-2},I_{j-1},I_j\},\\
+S_1 &= \{I_{j-1},I_j,I_{j+1}\},\\
+S_2 &= \{I_j,I_{j+1},I_{j+2}\}.
+\end{align*}
+
+The stencil is selected to avoid regions containing strong variation or discontinuities.
+\end{frame}
+
+\begin{frame}{Divided differences and stencil selection}
+For point values, the first divided difference is
+\begin{equation}
+    u[x_j,x_{j+1}]
+    =\frac{u(x_{j+1})-u(x_j)}{x_{j+1}-x_j}.
+\end{equation}
+Higher-order divided differences are defined recursively by
+\begin{equation}
+    u[x_j,\ldots,x_{j+k}]
+    =
+    \frac{
+    u[x_{j+1},\ldots,x_{j+k}]
+    -u[x_j,\ldots,x_{j+k-1}]
+    }{x_{j+k}-x_j}.
+\end{equation}
+
+ENO chooses the extension with the smaller magnitude of divided difference, which favors the locally smoother stencil.
+\end{frame}
+
+\begin{frame}{ENO reconstruction workflow}
+A typical ENO finite-volume reconstruction proceeds as follows:
 \begin{enumerate}
-    \item Finite Volume Method
-    \item ENO Scheme
-    \item Numerical Fluxes
+    \item Start from the cell average $\uh_j$.
+    \item Build a stencil adaptively using smoothness information.
+    \item Construct a polynomial of the desired degree whose cell averages agree with the selected cells.
+    \item Evaluate the polynomial at $x_{j+1/2}$ to obtain $u^-_{j+1/2}$.
+    \item Repeat from the neighboring cell to obtain $u^+_{j+1/2}$.
+    \item Use these states in a numerical flux.
 \end{enumerate}
 \end{frame}
 
+\begin{frame}{Strengths and limitations of ENO}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\textbf{Strengths}
+\begin{itemize}
+    \item high-order accuracy in smooth regions,
+    \item avoids stencils crossing strong discontinuities,
+    \item strongly reduces spurious oscillations,
+    \item naturally suited to conservation laws.
+\end{itemize}
 
-\begin{frame}{ENO stencil selection}
-    \begin{itemize}
-        \item Solution cell averages:
-        \begin{equation}
-            u[x_j] = \bar{u_j}, \; \; \; \forall j
-        \end{equation}
-        
-        \item First order divided difference:
-        \begin{equation}
-            u[x_j,x_{j+1}] = \frac{u[x_{j+1}] - u[x_j] }{x_{j+1} - x_j}, \; \; \forall j
-        \end{equation}
-        \item kth order divided difference:
-        \begin{equation}
-            u[x_j,x_{j+1},\cdots,x_{j+k}] = 
-        \end{equation}
-    \end{itemize}
+\column{0.48\textwidth}
+\textbf{Limitations}
+\begin{itemize}
+    \item stencil switching can reduce smoothness of the numerical approximation,
+    \item only one stencil is used at each reconstruction,
+    \item implementation becomes more involved at high order.
+\end{itemize}
+\end{columns}
 \end{frame}
 
-\begin{frame}{ENO Stencil}
-    Figure here
+\section{WENO Reconstruction}
+
+\begin{frame}{Weighted ENO idea}
+WENO improves on ENO by combining all candidate stencils rather than selecting only one.
+
+\medskip
+If $q_r$ is the reconstruction from stencil $S_r$, then
+\begin{equation}
+    u^-_{j+1/2}
+    =\sum_{r=0}^{2}\omega_r q_r,
+\end{equation}
+where the nonlinear weights $\omega_r$ satisfy
+\[
+    \omega_r\ge 0,
+    \qquad
+    \sum_{r=0}^{2}\omega_r=1.
+\]
+Smooth stencils receive large weights; stencils containing a discontinuity receive small weights.
 \end{frame}
 
-\begin{frame}{ENO Reconstruction of $u^-_{j+\frac{1}{2}}$}
-\begin{enumerate}
-    \item Choose ENO stencil containing 3 cells
-    \begin{enumerate}
-        \item starting with $\bar{u}_j$
-        \item choose 3 cells in the ENO stencil, in an adaptive manner guided by divided differences.
-    \end{enumerate}
-    
-    \item Contruct polynomials of degree 2, whose cell averages agree with the given cell averages.
-    \begin{equation}
-        \int P_2(x)dx = \bar{u_j} \; \; I \in \text{ ENO stencil.}
-    \end{equation}
-    
-    \item Evaluate $P_2(x)$ at $x_{j+\frac{1}{2}}$ approximating $u^-_{j+\frac{1}{2}}$.
-\end{enumerate}
+\begin{frame}{Classical fifth-order WENO candidate reconstructions}
+For a left-biased reconstruction at $x_{j+1/2}$, the three third-order candidates are
+\begin{align*}
+q_0 &= \frac{1}{3}u_{j-2}-\frac{7}{6}u_{j-1}+\frac{11}{6}u_j,\\
+q_1 &= -\frac{1}{6}u_{j-1}+\frac{5}{6}u_j+\frac{1}{3}u_{j+1},\\
+q_2 &= \frac{1}{3}u_j+\frac{5}{6}u_{j+1}-\frac{1}{6}u_{j+2}.
+\end{align*}
+
+In smooth regions the optimal linear weights are
+\begin{equation}
+    d_0=\frac{1}{10},
+    \qquad
+    d_1=\frac{6}{10},
+    \qquad
+    d_2=\frac{3}{10}.
+\end{equation}
 \end{frame}
 
-\begin{frame}{ENO Scheme}
-    Given $\bar{u_j} \forall j$ 
-    \begin{enumerate}
-        \item ENO reconstruction $u^{\pm}_{j+\frac{1}{2}},\;\; \forall j$.
-        
-        \item Evaluate numerical fluxes
-        \begin{equation}
-            \hat{f}_{j+\frac{1}{2}} = \bar{f}(u^-_{j+\frac{1}{2}}, u^+_{j+\frac{1}{2}}), \;\;\; \forall j.
-        \end{equation}
-        
-        \item Evolve the ODE system by method of lines
-        \begin{equation}
-            \frac{d}{dt} \bar{u_j} + \frac{1}{\Delta x} \left( \bar{f}_{j+\frac{1}{2}} - \hat{f}_{j+\frac{1}{2}}  \right) = 0,
-        \end{equation}
-        to update $\bar{u}$ for each RungeKutta stage, and finally $u^{n+1}_j$.
-    \end{enumerate}
+\begin{frame}{WENO smoothness indicators}
+For the classical WENO5 reconstruction, the Jiang--Shu indicators are
+\begin{align*}
+\beta_0 & = \frac{13}{12}(u_{j-2}-2u_{j-1}+u_j)^2
++\frac14(u_{j-2}-4u_{j-1}+3u_j)^2,\\
+\beta_1 & = \frac{13}{12}(u_{j-1}-2u_j+u_{j+1})^2
++\frac14(u_{j-1}-u_{j+1})^2,\\
+\beta_2 & = \frac{13}{12}(u_j-2u_{j+1}+u_{j+2})^2
++\frac14(3u_j-4u_{j+1}+u_{j+2})^2.
+\end{align*}
+
+Large $\beta_r$ indicates a less smooth candidate stencil.
 \end{frame}
 
-\section{Mathematical Model}
-\begin{frame}{Mathematical Model}
-    Applying the ENO weno Schemes on the Proposed model in the article
-    Show the Model with system of equations
+\begin{frame}{Nonlinear WENO weights}
+Define
+\begin{equation}
+    \alpha_r=\frac{d_r}{(\varepsilon+\beta_r)^p},
+    \qquad
+    \omega_r=\frac{\alpha_r}{\sum_{s=0}^{2}\alpha_s},
+\end{equation}
+with a small $\varepsilon>0$ and commonly $p=2$.
+
+\medskip
+Then
+\begin{equation}
+    u^-_{j+1/2}
+    =\omega_0q_0+\omega_1q_1+\omega_2q_2.
+\end{equation}
+
+In smooth regions, $\omega_r\approx d_r$, recovering fifth-order accuracy. Near discontinuities, troubled stencils are automatically down-weighted.
 \end{frame}
 
-
-\section{Future Work}
-\begin{frame}{Future Work}
-    Higher Order Multidimensional ENO/Weno scheme for proposed model
-    Implementing Algorithm for proposed Mathematical Model.
+\begin{frame}{ENO versus WENO}
+\begin{table}
+\centering
+\begin{tabular}{lll}
+\toprule
+Feature & ENO & WENO \\
+\midrule
+Stencil strategy & chooses one & blends several \\
+Smoothness control & divided differences & smoothness indicators \\
+High-order accuracy & yes & yes \\
+Near shocks & non-oscillatory & non-oscillatory \\
+Smoothness of weights & stencil switching & nonlinear continuous weights \\
+Typical modern use & educational / specialized & widely used \\
+\bottomrule
+\end{tabular}
+\end{table}
 \end{frame}
 
+\section{Time Integration and Stability}
 
-%% References
-\begin{frame}[allowframebreaks]
-        \frametitle{References}
-        \bibliographystyle{amsalpha}
-        \bibliography{references.bib}
+\begin{frame}{Method of lines}
+After spatial discretization, write
+\begin{equation}
+    \frac{d\bm{u}}{dt}=L(\bm{u}).
+\end{equation}
+A common third-order strong-stability-preserving Runge--Kutta method is
+\begin{align*}
+\bm{u}^{(1)} &= \bm{u}^{n}+\dt L(\bm{u}^{n}),\\
+\bm{u}^{(2)} &= \frac34\bm{u}^{n}
++\frac14\left(\bm{u}^{(1)}+\dt L(\bm{u}^{(1)})\right),\\
+\bm{u}^{n+1} &= \frac13\bm{u}^{n}
++\frac23\left(\bm{u}^{(2)}+\dt L(\bm{u}^{(2)})\right).
+\end{align*}
+\end{frame}
+
+\begin{frame}{CFL restriction}
+Explicit finite-volume schemes require a time-step restriction of the form
+\begin{equation}
+    \dt
+    \le
+    C_{\mathrm{CFL}}
+    \frac{\dx}{\max |f'(u)|}
+\end{equation}
+for a scalar conservation law.
+
+\medskip
+For systems, the denominator is replaced by the largest relevant characteristic speed.
+
+\medskip
+The admissible value of $C_{\mathrm{CFL}}$ depends on the spatial discretization, numerical flux, and time integrator.
+\end{frame}
+
+\section{Suggested Numerical Experiments}
+
+\begin{frame}{Test problem 1: linear advection}
+Consider
+\begin{equation}
+    u_t+a u_x=0,
+\end{equation}
+with periodic boundary conditions.
+
+Useful tests include
+\begin{itemize}
+    \item smooth initial data for convergence-order studies,
+    \item a square pulse to assess non-oscillatory behavior,
+    \item comparison of ENO and WENO at equal grid resolution.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Test problem 2: Burgers' equation}
+Consider
+\begin{equation}
+    u_t+\left(\frac{u^2}{2}\right)_x=0.
+\end{equation}
+Two standard Riemann cases are
+\begin{itemize}
+    \item $u_L>u_R$: shock formation,
+    \item $u_L<u_R$: rarefaction wave.
+\end{itemize}
+
+These cases provide simple nonlinear tests for resolution, oscillation control, and shock-capturing ability.
+\end{frame}
+
+\section{Project Status and Future Work}
+
+\begin{frame}{Current scope of this repository}
+The present repository documents the theoretical and presentation stage of the project.
+
+\medskip
+It does \textbf{not yet contain} a complete ENO/WENO implementation or numerical experiments.
+
+\medskip
+The next reproducible research step is to implement the reconstruction and flux algorithms and benchmark them on standard conservation-law problems.
+\end{frame}
+
+\begin{frame}{Planned development}
+\begin{itemize}
+    \item Implement ENO reconstruction in Python.
+    \item Implement WENO3 and WENO5 reconstruction.
+    \item Add Lax--Friedrichs or local Lax--Friedrichs numerical fluxes.
+    \item Add SSP Runge--Kutta time stepping.
+    \item Test linear advection and Burgers' equation.
+    \item Measure $L^1$, $L^2$, and $L^\infty$ errors for smooth solutions.
+    \item Estimate observed convergence orders.
+    \item Extend to nonlinear systems and selected Riemann problems.
+\end{itemize}
+\end{frame}
+
+\section{References}
+
+\begin{frame}[allowframebreaks]{References}
+    \bibliographystyle{amsalpha}
+    \bibliography{references}
 \end{frame}
 
 \end{document}
